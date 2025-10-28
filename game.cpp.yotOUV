@@ -1,0 +1,124 @@
+#include <QTimer>
+#include <QCursor>
+
+
+#include "game.h"
+#include "firstmenu.h"
+#include "./ui_firstmenu.h"
+
+Game::Game(QWidget *parent) : QWidget(  )
+{
+
+    /**** Styles parameters             ****/
+    setFixedSize(VIEW_WIDTH, VIEW_HEIGHT);
+    setStyleSheet("background-color: black;");
+
+    /**** Timer initialization          ****/
+    timer = new QTimer(this);
+    connect(timer, &QTimer::timeout, this, &Game::updateGame);
+
+    /**** Peripherals interactions      ****/
+    setMouseTracking(1);
+}
+
+
+void Game::initializeBall()
+{
+    ball_pos    = {VIEW_WIDTH / 2 , VIEW_HEIGHT / 2};
+    ball_speed  = {INITIAL_SPEED_X, INITIAL_SPEED_Y};
+}
+
+void Game::Start()
+{
+    /**** Parameter initializations     ****/
+    initializeBall();
+    playerPaddle = new Paddle();
+
+    timer->start(FRAME_DURATION_MS); // 60 FPS
+}
+
+void Game::updateGame()
+{
+    checkGameOver();
+    handleWallCollisions();
+    handlePaddleCollision();
+    moveBall();
+    update();
+}
+
+void Game::moveBall()
+{
+    ball_pos += ball_speed;
+}
+
+bool Game::isBallBelowScreen() const
+{
+    return ball_pos.y() + BALL_WIDTH >= VIEW_HEIGHT;
+}
+
+
+
+bool Game::isBallOutOfBoundsTop() const
+{
+    return ball_pos.y() - BALL_WIDTH <= 0;
+}
+
+void Game::checkGameOver()
+{
+    if(isBallBelowScreen())
+    {
+        timer->stop();
+        emit game_is_finished();
+    }
+}
+
+void Game::handleCollisions()
+{
+    handleWallCollisions();
+    handlePaddleCollision();
+}
+
+bool Game::isBallOutOfBoundsX() const
+{
+    return ball_pos.x() - BALL_WIDTH <= 0
+           || ball_pos.x() + BALL_WIDTH >= VIEW_WIDTH;
+}
+
+void Game::handleWallCollisions()
+{
+    if (isBallOutOfBoundsX()) {
+        ball_speed.setX(-ball_speed.x());
+    }
+
+    if (isBallOutOfBoundsTop()) {
+        ball_speed.setY(abs(ball_speed.y())); // Rebond vers le bas
+    }
+}
+
+void Game::handlePaddleCollision()
+{
+    // Point le plus proche de la balle sur la raquette
+    double closestX = std::clamp(ball_pos.x(), playerPaddle.left(), playerPaddle.right());
+    double closestY = std::clamp(ball_pos.y(), playerPaddle.top(), playerPaddle.bottom());
+
+    double distanceX = abs(closestX - ball_pos.x());
+    double distanceY = abs(closestY - ball_pos.y());
+
+    // Collision détectée si la balle touche le rectangle
+    if (distanceX <= BALL_WIDTH && distanceY <= BALL_WIDTH) {
+        handlePaddleCollisionResponse(closestX, closestY);
+    }
+}
+
+void Game::handlePaddleCollisionResponse(double closestX, double closestY)
+{
+    // Collision sur les côtés
+    if (closestX == playerPaddle.left() || closestX == playerPaddle.right()) {
+        ball_speed.setX(-ball_speed.x());
+    }
+
+    // Collision sur le haut/bas
+    if (closestY == playerPaddle.top() || closestY == playerPaddle.bottom()) {
+        ball_speed.setY(-ball_speed.y());
+    }
+}

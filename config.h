@@ -1,0 +1,19 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#define VIEW_HEIGHT 700
+#define VIEW_WIDTH 1000
+
+#define RECTANGLE_WIDTH 100
+#define RECTANGLE_HEIGHT 20
+
+#define BALL_WIDTH 20
+#define INITIAL_SPEED_X 1
+#define INITIAL_SPEED_Y 1
+
+#define FRAME_DURATION_MS 8
+
+
+
+
+#endif // CONFIG_H
